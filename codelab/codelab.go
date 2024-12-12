@@ -40,9 +40,9 @@ import (
 )
 
 func main() {
-	exercise1()
-	exercise2()
-	// exercise3()
+	// exercise1()
+	// exercise2()
+	exercise3()
 	// exercise4()
 	// exercise5()
 	// exercise6()
@@ -121,8 +121,20 @@ func exercise2() {
 // request a second time at midnight. Observe the difference in output.
 func exercise3() {
 	fmt.Println("=== Exercise 3: Logical AND/OR ===")
+	env, _ := cel.NewEnv(
+		cel.Types(&rpcpb.AttributeContext_Request{}),
+		cel.Variable("request",
+			cel.ObjectType("google.rpc.context.AttributeContext.Request"),
+		),
+	)
 
-	fmt.Println()
+	ast := compile(env,
+		`request.auth.claims.group == 'admin'
+				|| request.auth.principal == 'user:me@acme.co'`, cel.BoolType)
+	program, _ := env.Program(ast)
+	emptyClaims := map[string]string{}
+	// since there's no safe default ex3 will error"
+	eval(program, request(auth("other:me@acme.co", emptyClaims), time.Now()))
 }
 
 // exercise4 demonstrates how to extend CEL with custom functions.
