@@ -47,8 +47,8 @@ func main() {
 	// exercise2()
 	// exercise3()
 	// exercise4()
-	exercise5()
-	// exercise6()
+	// exercise5()
+	exercise6()
 	// exercise7()
 	// exercise8()
 }
@@ -222,7 +222,46 @@ func exercise5() {
 func exercise6() {
 	fmt.Println("=== Exercise 6: Building Protos ===")
 
-	fmt.Println()
+	requestType := &rpcpb.AttributeContext_Request{}
+	env, _ := cel.NewEnv(
+		// add cel container for attributecontext
+		cel.Container("google.rpc.context.AttributeContext"),
+		cel.Types(requestType),
+		// add cel variable option for jwt and for now
+		cel.Variable("jwt", cel.MapType(cel.StringType, cel.DynType)),
+		cel.Variable("now", cel.TimestampType),
+	)
+
+	ast := compile(env, `
+    Request{
+        auth: Auth{
+            principal: jwt.iss + '/' + jwt.sub,
+            audiences: [jwt.aud],
+            presenter: 'azp' in jwt ? jwt.azp : "",
+            claims: jwt
+        },
+        time: now
+    }`,
+		cel.ObjectType("google.rpc.context.AttributeContext.Request"),
+	)
+	program, _ := env.Program(ast)
+
+	out, _, _ := eval(
+		program,
+		map[string]interface{}{
+			"jwt": map[string]interface{}{
+				"sub": "serviceAccount:delegate@acme.co",
+				"aud": "my-project",
+				"iss": "auth.acme.com:12350",
+				"extra_claims": map[string]string{
+					"group": "admin",
+				},
+			}, "now": time.Now(),
+		},
+	)
+
+	fmt.Printf("------ type unwrap ------\n%v\n", out.Value())
+
 }
 
 // exercise7 introduces macros for dealing with repeated fields and maps.
