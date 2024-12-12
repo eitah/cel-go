@@ -41,13 +41,13 @@ import (
 
 func main() {
 	exercise1()
-	exercise2()
-	exercise3()
-	exercise4()
-	exercise5()
-	exercise6()
-	exercise7()
-	exercise8()
+	// exercise2()
+	// exercise3()
+	// exercise4()
+	// exercise5()
+	// exercise6()
+	// exercise7()
+	// exercise8()
 }
 
 // exercise1 evaluates a simple literal expression: "Hello, World!"
@@ -56,6 +56,34 @@ func main() {
 func exercise1() {
 	fmt.Println("=== Exercise 1: Hello World ===\n")
 
+	env, err := cel.NewEnv()
+	if err != nil {
+		glog.Exit("env error: %v", err)
+	}
+	// check that the expression compiles and returns a string
+	ast, iss := env.Parse(`"Hello, World!"`)
+	// ast, iss := env.Parse(`12345`)
+	// report errors if present
+	if iss.Err() != nil {
+		glog.Exit(iss.Err())
+	}
+
+	// type check the expression for correctness
+	checked, iss := env.Check(ast)
+	if iss.Err() != nil {
+		glog.Exit(iss.Err())
+	}
+	// check that the output type is a string
+	if !reflect.DeepEqual(checked.OutputType(), cel.StringType) {
+		glog.Exitf("got %v, wanted %v output type", checked.OutputType(), cel.StringType)
+	}
+
+	// plan the program
+	program, err := env.Program(checked)
+	if err != nil {
+		glog.Exitf("program error :%v", err)
+	}
+	eval(program, cel.NoVars())
 	fmt.Println()
 }
 
