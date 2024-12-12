@@ -14,6 +14,9 @@
 
 // This file contains code that demonstrates common CEL features.
 // This code is intended for use with the CEL Codelab: go/cel-codelab-go
+//
+//nolint:unused
+
 package main
 
 import (
@@ -42,8 +45,8 @@ import (
 func main() {
 	// exercise1()
 	// exercise2()
-	exercise3()
-	// exercise4()
+	// exercise3()
+	exercise4()
 	// exercise5()
 	// exercise6()
 	// exercise7()
@@ -143,6 +146,37 @@ func exercise3() {
 // indicating whether the map contains the key-value pair.
 func exercise4() {
 	fmt.Println("=== Exercise 4: Customization ===")
+
+	typeParamA := cel.TypeParamType("A")
+	typeParamB := cel.TypeParamType("B")
+	mapAB := cel.MapType(typeParamA, typeParamB)
+
+	env, _ := cel.NewEnv(
+		cel.Types(&rpcpb.AttributeContext_Request{}),
+		cel.Variable("request",
+			cel.ObjectType("google.rpc.context.AttributeContext.Request"),
+		),
+		cel.Function("contains",
+			cel.MemberOverload(
+				"map_contains_key_value",
+				[]*cel.Type{mapAB, typeParamA, typeParamB},
+				cel.BoolType,
+				cel.FunctionBinding(mapContainsKeyValue),
+			),
+		),
+	)
+
+	ast := compile(
+		env,
+		`request.auth.claims.contains('group', 'admin')`,
+		cel.BoolType,
+	)
+	program, _ := env.Program(ast)
+	emptyClaims := map[string]string{}
+	eval(
+		program,
+		request(auth("user:me@acme.co", emptyClaims), time.Now()),
+	)
 
 	fmt.Println()
 }
