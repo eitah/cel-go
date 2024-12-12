@@ -49,8 +49,8 @@ func main() {
 	// exercise4()
 	// exercise5()
 	// exercise6()
-	exercise7()
-	// exercise8()
+	// exercise7()
+	exercise8()
 }
 
 // exercise1 evaluates a simple literal expression: "Hello, World!"
@@ -312,8 +312,24 @@ func exercise7() {
 // heterogeneous list and map literals.
 func exercise8() {
 	fmt.Println("=== Exercise 8: Tuning ===")
+	env, _ := cel.NewEnv(
+		cel.Variable("x", cel.IntType),
+		cel.Variable("y", cel.UintType),
+	)
+	ast := compile(env,
+		`x in [1,2,3,4,5] && type(y) == uint`,
+		cel.BoolType)
 
-	fmt.Println()
+	// Try the different cel.EvalOptions flags when evaluating this ast for the
+	// following use cases:
+	// - cel.OptOptimize: optimize performance
+	// - cel.OptExhaustiveEval: turn off short-circuting
+	// - cel.OptTrackState: track state and compute a residual using the
+	// interpreter.PruneAst function.
+	trueVars := map[string]interface{}{"x": int64(6), "y": uint64(2)}
+	// program, _ := env.Program(ast, cel.EvalOptions(cel.OptOptimize))
+	program, _ := env.Program(ast, cel.EvalOptions(cel.OptExhaustiveEval))
+	eval(program, trueVars)
 }
 
 // Functions to assist with CEL execution.
