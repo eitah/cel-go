@@ -48,8 +48,8 @@ func main() {
 	// exercise3()
 	// exercise4()
 	// exercise5()
-	exercise6()
-	// exercise7()
+	// exercise6()
+	exercise7()
 	// exercise8()
 }
 
@@ -271,6 +271,33 @@ func exercise6() {
 // values containing only strings that end with '@acme.co`.
 func exercise7() {
 	fmt.Println("=== Exercise 7: Macros ===")
+	env, _ := cel.NewEnv(
+		// cel.ClearMacros(),
+		cel.Variable("jwt", cel.MapType(cel.StringType, cel.DynType)),
+	)
+	ast := compile(env,
+		`jwt.extra_claims.exists(c, c.startsWith('group'))
+				&& jwt.extra_claims
+							.filter(c, c.startsWith('group'))
+							.all(c, jwt.extra_claims[c]
+							.all(g, g.endsWith('@acme.co')))`,
+		cel.BoolType)
+	program, _ := env.Program(ast)
+
+	eval(program,
+		map[string]interface{}{
+			"jwt": map[string]interface{}{
+				"sub": "serviceAccount:delegate@acme.co",
+				"aud": "my-project",
+				"iss": "auth.acme.com:12350",
+				"extra_claims": map[string][]string{
+					"group1": {"admin@acme.co", "analyst@acme.co"},
+					"labels": {"metadata", "prod", "pii"},
+					"groupN": {"forever@acme.co"},
+				},
+			},
+		},
+	)
 
 	fmt.Println()
 }
