@@ -46,8 +46,8 @@ func main() {
 	// exercise1()
 	// exercise2()
 	// exercise3()
-	exercise4()
-	// exercise5()
+	// exercise4()
+	exercise5()
 	// exercise6()
 	// exercise7()
 	// exercise8()
@@ -186,8 +186,32 @@ func exercise4() {
 // Given the input `now`, construct a JWT with an expiry of 5 minutes.
 func exercise5() {
 	fmt.Println("=== Exercise 5: Building JSON ===")
+	env, _ := cel.NewEnv(
+		cel.Variable("now", cel.TimestampType),
+	)
 
-	fmt.Println()
+	ast := compile(env, `
+{
+	'sub': 'serviceAccount:delegate@acme.co',
+	'aud': 'my-project',
+	'iss': 'auth.acme.com:12350',
+	'iat': now,
+	'nbf': now,
+	'exp': now + duration('300s'),
+	'extra_claims': {
+		'group': 'admin'
+}}
+`, cel.MapType(cel.StringType, cel.DynType))
+
+	program, _ := env.Program(ast)
+	out, _, _ := eval(
+		program,
+		map[string]interface{}{
+			"now": &tpb.Timestamp{Seconds: time.Now().Unix()},
+		},
+	)
+
+	fmt.Printf("---- type conversion-------\n%v\n", valueToJSON(out))
 }
 
 // exercise6 describes how to build proto message types within CEL.
